@@ -8,6 +8,10 @@ const wordInputsContainer = document.getElementById('wordInputsContainer');
 const processBtn = document.getElementById('processBtn');
 const statusBox = document.getElementById('statusBox');
 const countButtons = document.querySelectorAll('.count-btn');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalBody = document.getElementById('modalBody');
+const modalClose = document.getElementById('modalClose');
+const modalOk = document.getElementById('modalOk');
 
 let currentFile = null;
 let currentWordCount = 1;
@@ -50,6 +54,22 @@ function init() {
     wordInputsContainer.addEventListener('keypress', (e) => {
         if (e.target.classList.contains('word-input') && e.key === 'Enter' && processBtn.disabled === false) {
             processFile();
+        }
+    });
+    
+    // Обработчики модального окна
+    modalClose.addEventListener('click', closeModal);
+    modalOk.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            closeModal();
+        }
+    });
+    
+    // Закрытие по Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalOverlay.style.display !== 'none') {
+            closeModal();
         }
     });
     
@@ -201,8 +221,12 @@ async function processFile() {
         logStatus('✓ ГОТОВО! Файл успешно обработан.', 'success');
         logStatus(`Резервная копия: ${backupFilename}`, 'info');
         
+        // Показываем модальное окно с результатами
+        showResultModal(result, backupFilename);
+        
     } catch (error) {
         logStatus(`Ошибка: ${error.message}`, 'error');
+        showErrorModal(error.message);
     } finally {
         processBtn.disabled = false;
         updateProcessButton();
@@ -289,4 +313,33 @@ function logStatus(message, type = 'info') {
     p.textContent = message;
     statusBox.appendChild(p);
     statusBox.scrollTop = statusBox.scrollHeight;
+}
+
+// Показать модальное окно с результатами
+function showResultModal(result, backupFilename) {
+    modalBody.innerHTML = `
+        <p>Файл успешно обработан!</p>
+        <p><span class="result-stat">Удалено строк: ${result.removedCount} из ${result.totalLines}</span></p>
+        <p class="result-info">Резервная копия сохранена:</p>
+        <div class="result-file">${backupFilename}</div>
+    `;
+    modalOverlay.style.display = 'flex';
+}
+
+// Показать модальное окно с ошибкой
+function showErrorModal(errorMessage) {
+    const modalTitle = document.querySelector('.modal-title');
+    modalTitle.textContent = '✗ Ошибка';
+    modalTitle.style.color = '#f44336';
+    modalBody.innerHTML = `<p style="color: #f44336;">${errorMessage}</p>`;
+    modalOverlay.style.display = 'flex';
+}
+
+// Закрыть модальное окно
+function closeModal() {
+    modalOverlay.style.display = 'none';
+    // Восстанавливаем стандартный заголовок
+    const modalTitle = document.querySelector('.modal-title');
+    modalTitle.textContent = '✓ Успех';
+    modalTitle.style.color = '#4caf50';
 }
